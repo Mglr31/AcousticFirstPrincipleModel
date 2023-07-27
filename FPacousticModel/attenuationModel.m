@@ -82,16 +82,6 @@ addParameter(p,'PlotOption',default_plotoption);
 
 parse(p,model,varargin{:});
 
-%% Check the current directory
-% list=ls;
-% list=deblank(string(list));
-% flag=sum(list=="Tables");
-% if flag==0
-%     %disp("Error: the function must be executed in a directory that contains a folder named Tables with all the gas and vibration mode tables in it")
-%     %return
-%     dir=pwd;
-%     cd("D:\m.gillier\Documents\MATLAB\Model")
-% end
 
 %% Complete the model and tables
 [gas_t,vib_t]=makeModelTables(model);%create and save tables corresponding to the model molecule and modes parameters
