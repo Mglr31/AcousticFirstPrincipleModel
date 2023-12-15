@@ -1,2 +1,3 @@
 # AcousticPropagation
-Some Matlab code to model the attenuation and propagation of acoustic wave near the surface
+A Matlab code to model the attenuation coefficent and speed of sound in a gase mixture.
+
