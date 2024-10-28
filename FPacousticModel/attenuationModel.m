@@ -36,13 +36,6 @@ function result=attenuationModel(model,varargin)
 %       'FreqArray':            An array of the frequency for which the
 %                               attenuation will be computed. Default value: logspace(-2 ,10,3000);
 %
-%       'PlotOption':           Default:'none', nothing will be plotted.
-%                               Possible values ["alpha_r","alpha_c","alpha_rot","c","alpha","a","all"] for plotting
-%                               respectively the relaxation attenuation,
-%                               the classical attenuation,the rotationnal
-%                               attenuation
-%                               the speed of sound, the total attenuation and all attenuation. Example:
-%                               'PlotOption',["alpha_r","c"].
 %
 %   Outputs:
 %       result: a structure containing the result of the model.
@@ -77,8 +70,6 @@ addRequired(p,'model');
 %Optionnal input
 default_freqarray=logspace(-2 ,10,3000);
 addParameter(p,'FreqArray',default_freqarray);
-default_plotoption="none";
-addParameter(p,'PlotOption',default_plotoption);
 
 parse(p,model,varargin{:});
 
@@ -88,12 +79,6 @@ parse(p,model,varargin{:});
 model.gasT=gas_t;
 model.vibT=vib_t;
 model=addDerivativePArameter(model);%Compute secondary parameters(density,viscosity,cv,cp...) and add them to the model
-%% Debug water vapor
-l=gas_t(gas_t.Name=="H2O",:);
-result.Nwater=l.N;
-
-
-
 
 %% Compute relaxational attenuation and sound of speed
 s1=tic;
@@ -116,33 +101,18 @@ fmaxs.freq=f(TF);
 fmaxs.prominence=P(TF);
 
 
-%% Compute the classical and rotationnal attenuation(and diffusion)
+%% Compute the classical attenuation
 s3=tic;
 alpha_c=computeClassicalAtt(model,c,f);
-%ccoeff=alpha_c./f.^2.*c.^3
-alpha_rot=computeRotationnalAtt(model,c,f);
-%diff=computeDiffusionAttenuation(model,c,f);
-%alpha_diff=diff.alpha;
-%diff.name
-
 t3=toc(s3);
 
-%% Compute the dust attenuation
 
-if isfield(model,'dust')
-    a2pilambda=getDustAtt(model.dust,f,model);
-    a_dust=a2pilambda*2*pi./lambda;
-else
-    a_dust=[];
-end
 %% Make result
-alpha=alpha_r+alpha_c+alpha_rot;
+alpha=alpha_r+alpha_c;
 result.f=f;
 result.alpha=alpha;
 result.alpha_c=alpha_c;
 result.alpha_r=alpha_r;
-result.alpha_rot=alpha_rot;
-result.alpha_dust=a_dust;
 result.fmax=fmax;
 result.fmaxs=fmaxs;
 result.c=c;
@@ -152,159 +122,6 @@ result.FrequencyComputationTime=t2;
 result.ClassicalAndRotComputationTime=t3;
 
 
-%% Getting back to original directory
-if flag==0
-
-    cd(dir)
-end
-%% Plotting(if required)
-if p.Results.PlotOption ~="none"% if plotting was required
-    %% Check for reference model and experimental data
-    model_flag=0;
-    exp_flag=0;
-    if isfield(model,'model_csv')
-        model_flag=1;
-        tab=readtable(model.model_csv,'Delimiter',';','DecimalSeparator',',');
-        f_ref=tab.Var1;
-        alambda_ref=tab.Var2;
-    end
-
-    if isfield(model,'experiment_csv')
-        exp_flag=1;
-        tab2=readtable(model.experiment_csv,'Delimiter',';','DecimalSeparator',',');
-        f_exp=tab2.Var1;
-        al_exp=tab2.Var2;
-    end
-    n=length(p.Results.PlotOption);
-    titre="";
-    u=unique(model.listOfMole,"stable");
-    for k=1:length(u)
-        titre=strcat(titre,u(k),"(",string(model.MolarFrac(k)),"), ");
-
-    end
-    titre=strcat(titre," T=",string(model.T),", P=",string(model.P));
-    fp=f/(model.P/101325);
-    for i=1:n
-        if p.Results.PlotOption(i)=="none"
-            disp("No plotting")
-        elseif p.Results.PlotOption(i)=="alpha_r"
-            figure
-            semilogx(fp,alpha_r.*lambda,'DisplayName',"Model",'LineWidth',2)
-            if exp_flag
-                hold on
-                semilogx(f_exp,al_exp,'+','DisplayName',"Experiment",'LineWidth',2,'MarkerSize',15)
-            end
-            if model_flag
-                hold on
-                semilogx(f_ref,alambda_ref,'--','DisplayName',"Reference Model(DL)",'LineWidth',2)
-            end
-            legend show
-            grid on
-            xlabel("Frequency/Pressure(Hz/atm)");
-            ylabel("Alpha\_relax*Lambda")
-            set(gca,'FontSize',22)
-            title(titre)
-        elseif p.Results.PlotOption(i)=="alpha_c"
-            figure
-            semilogx(f,alpha_c,'DisplayName',"Model",'LineWidth',2)
-            legend show
-            grid on
-            xlabel("Frequency(Hz)");
-            ylabel("Alpha classical(m-1)")
-            set(gca,'FontSize',22)
-            title(titre)
-
-        elseif p.Results.PlotOption(i)=="alpha"
-            figure
-            semilogx(fp,alpha.*lambda,'DisplayName',"Model",'LineWidth',2)
-            if exp_flag
-                hold on
-                semilogx(f_exp,al_exp,'+','DisplayName',"Experiment",'LineWidth',2,'MarkerSize',15)
-            end
-            if model_flag
-                hold on
-                semilogx(f_ref,alambda_ref,'--','DisplayName',"Reference Model(DL)",'LineWidth',2)
-            end
-            legend show
-            grid on
-            xlabel("Frequency/Pressure(Hz/atm)");
-            ylabel("Alpha*Lambda")
-            set(gca,'FontSize',22)
-            title(titre)
-
-        elseif p.Results.PlotOption(i)=="c"
-            figure
-            semilogx(f,c,'DisplayName',"Model",'LineWidth',2)
-            legend show
-            grid on
-            xlabel("Frequency(Hz)");
-            ylabel("Speed of Sound(m/s)")
-            set(gca,'FontSize',22)
-            title(titre)
 
 
-        elseif p.Results.PlotOption(i)=="a"
-            figure
-            loglog(f,alpha,'DisplayName',"Model",'LineWidth',2)
-            if exp_flag
-                hold on
-                loglog(f_exp,al_exp,'+','DisplayName',"Experiment",'LineWidth',2,'MarkerSize',15)
-            end
-            if model_flag
-                hold on
-                loglog(f_ref,alambda_ref,'--','DisplayName',"Reference Model(DL)",'LineWidth',2)
-            end
-            legend show
-            grid on
-            xlabel("Frequency(Hz)");
-            ylabel("\alpha(m^{-1})")
-            set(gca,'FontSize',22)
-            title(titre)
-
-        elseif p.Results.PlotOption(i)=="alpha_rot"
-            figure
-            loglog(f,alpha_rot,'DisplayName',"Model",'LineWidth',2)
-            if exp_flag
-                hold on
-                loglog(f_exp,al_exp,'+','DisplayName',"Experiment",'LineWidth',2,'MarkerSize',15)
-            end
-            if model_flag
-                hold on
-                loglog(f_ref,alambda_ref,'--','DisplayName',"Reference Model(DL)",'LineWidth',2)
-            end
-            legend show
-            grid on
-            xlabel("Frequency(Hz)");
-            ylabel("Alpha(m-1)")
-            set(gca,'FontSize',22)
-            title(titre)
-
-        elseif p.Results.PlotOption(i)=="all"
-            figure
-            loglog(f,alpha_rot,'DisplayName',"alpha\_rot",'LineWidth',2)
-            hold on
-            loglog(f,alpha_r,'DisplayName',"alpha\_relax",'LineWidth',2)
-            hold on
-            loglog(f,alpha_c,'DisplayName',"alpha\_classical",'LineWidth',2)
-            hold on
-       %     loglog(f,alpha_diff,'DisplayName',"alpha\_diff",'LineWidth',2)
-            hold on
-            loglog(f,alpha,'DisplayName',"alpha\_total",'LineWidth',2)
-            if exp_flag
-                hold on
-                %loglog(f_exp,al_exp,'+','DisplayName',"Experiment",'LineWidth',2,'MarkerSize',15)
-            end
-            if model_flag
-                hold on
-               % loglog(f_ref,alambda_ref,'--','DisplayName',"Reference Model(DL)",'LineWidth',2)
-            end
-            legend show
-            grid on
-            xlabel("Frequency(Hz)");
-            ylabel("Alpha(m^{-1})")
-            set(gca,'FontSize',22)
-            title(titre)
-        end
-    end
-end
 end
