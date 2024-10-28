@@ -25,12 +25,6 @@ function result=attenuationModel(model,varargin)
 %       model.P:                The pressure of the gas mixture in Pa. Ex:
 %                               101325
 %
-%      Optionnal parameters:
-%       model.model_csv:        The name of a csv file containing a
-%                               reference model. Example: "Tri_CH4_model_297.csv".
-%
-%       model.experiment_csv:   The name of a csv file containing
-%                               experimental data for the model. Example: "Tri_CH4_exp_297.csv".
 %
 %   Other inputs(optionnal Name-Value pairs):
 %       'FreqArray':            An array of the frequency for which the
