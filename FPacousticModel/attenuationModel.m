@@ -43,10 +43,7 @@ function result=attenuationModel(model,varargin)
 %           result.alpha_c:     The classical attenuation coefficient for each
 %                               frequency in result.f.
 %
-%           result.alpha_r:     The relaxational attenuation coefficient for each
-%                               frequency in result.f.
-%
-%           result.alpha_rot:   The rotationnal attenuation coefficient for each
+%           result.alpha_r:     The relaxational (molecular) attenuation coefficient for each
 %                               frequency in result.f.
 %
 %           result.fmax:        The frequency for which the relaxational
